@@ -27,7 +27,7 @@ def main():
     return jsonify(response)
 
 
-def handle_dialog(req, res):
+def handle_dialog(req, res, item='слон'):
     user_id = req['session']['user_id']
 
     if req['session']['new']:
@@ -38,8 +38,8 @@ def handle_dialog(req, res):
                 "Отстань!",
             ]
         }
-        res['response']['text'] = 'Привет! Купи слона!'
-        res['response']['buttons'] = get_suggests(user_id)
+        res['response']['text'] = f'Привет! Купи {item}а!'
+        res['response']['buttons'] = get_suggests(user_id, item)
         return
 
     if req['request']['original_utterance'].lower() in [
@@ -47,17 +47,20 @@ def handle_dialog(req, res):
         'куплю',
         'покупаю',
         'хорошо'
-    ]:
-        res['response']['text'] = 'Слона можно найти на Яндекс.Маркете!'
-        res['response']['end_session'] = True
+    ] or ['покупаю', 'куплю'] in req['request']['nlu']['tokens']:
+        res['response']['text'] = f'{item.capitalize()}а можно найти на Яндекс.Маркете!'
+        if item != "слон":
+            res['response']['end_session'] = True
+            return
+        handle_dialog(req, res, 'кролик')
         return
 
     res['response']['text'] = \
-        f"Все говорят '{req['request']['original_utterance']}', а ты купи слона!"
-    res['response']['buttons'] = get_suggests(user_id)
+        f"Все говорят '{req['request']['original_utterance']}', а ты купи {item}а!"
+    res['response']['buttons'] = get_suggests(user_id, item)
 
 
-def get_suggests(user_id):
+def get_suggests(user_id, item):
     session = sessionStorage[user_id]
 
     suggests = [
@@ -71,7 +74,7 @@ def get_suggests(user_id):
     if len(suggests) < 2:
         suggests.append({
             "title": "Ладно",
-            "url": "https://market.yandex.ru/search?text=слон",
+            "url": "https://market.yandex.ru/search?text=" + item,
             "hide": True
         })
 
